@@ -5,6 +5,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include <raylib.h>
 
 state *state_new(){
     // Ask for memory for the state
@@ -22,6 +23,14 @@ state *state_new(){
 
     // Retrieve pointer to the state
     return sta;
+}
+
+//Codigo sacado de entity_collision() en entity.c para calcular distancia entre 2 entidades
+float distance(entity *ent1, entity *ent2){
+    float delta_x = ent1->x - ent2->x;
+    float delta_y = ent1->y - ent2->y;
+    float delta_mag = sqrt(delta_x*delta_x+delta_y*delta_y);
+    return delta_mag;
 }
 
 void state_update(level *lvl, state *sta){
@@ -92,7 +101,35 @@ void state_update(level *lvl, state *sta){
     for(int i=0;i<sta->n_enemies;i++){
         entity_physics(lvl,&sta->enemies[i].ent);
         // Kill enemy if it has less than 0 HP
-        if(sta->enemies[i].ent.hp<=0) sta->enemies[i].ent.dead = 1;
+        if(sta->enemies[i].ent.hp<=0){
+            //Se busca el enemigo tipo BLOAT y se ve si hay un enemigos o jugador cercano a uno de sus radios de daño, en caso de que asi sea, recibe daño en relacion a la distancia
+            if(sta->enemies[i].kind == BLOAT){
+                for(int j=0;j<sta->n_enemies;j++){
+                    float distance_enemies = distance(&sta->enemies[i].ent, &sta->enemies[j].ent);
+                    if (i==j){
+                        //No va a hacer nada si encuentra su misma posicion, ya que si la encontrara, se mataria antes de hacer daño
+                    }else if (distance_enemies <= BLOAT_RANGE && distance_enemies > BLOAT_RANGE/2 ){
+                        sta->enemies[j].ent.hp -= BLOAT_DMG;
+                        if(sta->enemies[j].ent.hp <= 0) sta->enemies[j].ent.dead = 1;
+                    }else if (distance_enemies <= BLOAT_RANGE/2 && distance_enemies > BLOAT_RANGE/4 ){
+                        sta->enemies[j].ent.hp -= BLOAT_DMG_MID;
+                        if(sta->enemies[j].ent.hp <= 0) sta->enemies[j].ent.dead = 1;
+                    }else if (distance_enemies <= BLOAT_RANGE/4){
+                        sta->enemies[j].ent.hp -= BLOAT_DMG_MAX;
+                        if(sta->enemies[j].ent.hp <= 0) sta->enemies[j].ent.dead = 1;
+                    }//Se hara daño respecto a la distancia del centro a los enemigos
+                }
+                float distance_player = distance(&sta->pla.ent, &sta->enemies[i].ent);
+                if (distance_player <= BLOAT_RANGE && distance_player > BLOAT_RANGE/2 ){
+                    sta->pla.ent.hp -= BLOAT_DMG;
+                }else if (distance_player <= BLOAT_RANGE/2 && distance_player > BLOAT_RANGE/4 ){
+                    sta->pla.ent.hp -= BLOAT_DMG_MID;
+                }else if (distance_player <= BLOAT_RANGE/4){
+                    sta->pla.ent.hp -= BLOAT_DMG_MAX;
+                }//Se hara daño respecto a la distancia del centro al jugador
+            }
+            sta->enemies[i].ent.dead = 1;
+        }    
     }
     // Update bullets
     for(int i=0;i<sta->n_bullets;i++){
@@ -152,8 +189,12 @@ void state_populate_random(level *lvl, state *sta, int n_enemies){
                 new_enemy->ent.x = (posx+0.5)*TILE_SIZE;
                 new_enemy->ent.y = (posy+0.5)*TILE_SIZE;
                 // Pick an enemy tipe and set variables accordingly
-                int brute = rand()%4==0; // brute has 1/4 chance.
-                if(brute){
+                int enemy_kind = rand()%6; // brute has 1/4 chance.
+                if(enemy_kind==0){
+                    new_enemy->kind   = BLOAT;
+                    new_enemy->ent.hp = BLOAT_HP;
+                    new_enemy->ent.rad = BLOAT_RAD;
+                }else if (enemy_kind == 1 || enemy_kind == 2){
                     new_enemy->kind   = BRUTE;
                     new_enemy->ent.hp = BRUTE_HP;
                     new_enemy->ent.rad = BRUTE_RAD;

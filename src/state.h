@@ -12,6 +12,15 @@
 #define MINION_RAD 12
 #define BRUTE_HP   12
 #define BRUTE_RAD  16
+//Definimos las estadisticas del enemigo tipo BLOAT
+#define BLOAT_HP 8
+#define BLOAT_RAD 8
+//Distintos tipos de daño del tipo BLOAT, el cual va a depender de la distancia a la cual este la entidad a comparar
+//BLOAT_RANGE en float para poder compararlo con distance(), el cual tambien es float()
+#define BLOAT_DMG 4
+#define BLOAT_DMG_MID 6
+#define BLOAT_DMG_MAX 11
+#define BLOAT_RANGE 200.0
 
 #define BULLET_DMG 3
 #define BULLET_SPEED 16
@@ -26,7 +35,7 @@ typedef struct {
 } player;
 
 // ==== ENEMY DEFINITION
-typedef enum {MINION=0, BRUTE=1} enemykind;
+typedef enum {MINION=0, BRUTE=1, BLOAT=2} enemykind;
 
 typedef struct {
     entity ent;
